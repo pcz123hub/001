@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Room Management</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>
+        #app { padding: 20px; }
+        .el-table { margin-top: 20px; }
+        .el-button--mini { margin-left: 5px; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <el-button type="primary" @click="openAddDialog">Add Room</el-button>
+
+        <el-table :data="tableData" style="width: 100%">
+            <el-table-column prop="roomNumber" label="Room Number"></el-table-column>
+            <el-table-column prop="buildingName" label="Building"></el-table-column>
+            <el-table-column prop="capacity" label="Capacity"></el-table-column>
+            <el-table-column prop="currentOccupancy" label="Occupancy"></el-table-column>
+            <el-table-column prop="notes" label="Notes"></el-table-column>
+            <el-table-column prop="createTime" label="Create Time"></el-table-column>
+            <el-table-column prop="updateTime" label="Update Time"></el-table-column>
+            <el-table-column label="Actions" width="150">
+                <template slot-scope="scope">
+                    <el-button size="mini" @click="openEditDialog(scope.row)">Edit</el-button>
+                    <el-button size="mini" type="danger" @click="handleDelete(scope.row.id)">Delete</el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+
+        <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="40%">
+            <el-form :model="form" :rules="rules" ref="dataForm" label-width="120px">
+                <el-form-item label="Room Number" prop="roomNumber">
+                    <el-input v-model="form.roomNumber"></el-input>
+                </el-form-item>
+                <el-form-item label="Building" prop="buildingId">
+                    <el-select v-model="form.buildingId" placeholder="Select Building">
+                        <el-option v-for="item in buildingList" :key="item.id" :label="item.name" :value="item.id"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="Capacity" prop="capacity">
+                    <el-input-number v-model="form.capacity" :min="1"></el-input-number>
+                </el-form-item>
+                <el-form-item label="Notes" prop="notes">
+                    <el-input type="textarea" v-model="form.notes"></el-input>
+                </el-form-item>
+            </el-form>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="dialogVisible = false">Cancel</el-button>
+                <el-button type="primary" @click="submitForm">Confirm</el-button>
+            </span>
+        </el-dialog>
+    </div>
+
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    tableData: [],
+                    dialogVisible: false,
+                    dialogTitle: '',
+                    form: {
+                        id: null,
+                        roomNumber: '',
+                        buildingId: null,
+                        capacity: 1,
+                        notes: ''
+                    },
+                    rules: {
+                        roomNumber: [
+                            { required: true, message: 'Please input room number', trigger: 'blur' }
+                        ],
+                        buildingId: [
+                            { required: true, message: 'Please select a building', trigger: 'change' }
+                        ],
+                        capacity: [
+                            { required: true, message: 'Please input capacity', trigger: 'blur' },
+                            { type: 'number', message: 'Capacity must be a number'}
+                        ]
+                    },
+                    buildingList: []
+                }
+            },
+            methods: {
+                fetchRooms() {
+                    fetch('/room/page?page=1&pageSize=100') // Adjust as needed
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.code === 1 && data.data && data.data.records) {
+                                this.tableData = data.data.records;
+                            } else {
+                                this.$message.error(data.msg || 'Error fetching rooms');
+                            }
+                        })
+                        .catch(error => this.$message.error('Error fetching rooms: ' + error));
+                },
+                fetchBuildingsForDropdown() {
+                    fetch('/building/list')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.code === 1) {
+                                this.buildingList = data.data;
+                            } else {
+                                this.$message.error(data.msg || 'Error fetching buildings for dropdown');
+                            }
+                        })
+                        .catch(error => this.$message.error('Error fetching buildings: ' + error));
+                },
+                openAddDialog() {
+                    this.form = { id: null, roomNumber: '', buildingId: null, capacity: 1, notes: '' };
+                    this.dialogTitle = 'Add Room';
+                    this.dialogVisible = true;
+                    this.$nextTick(() => { this.$refs.dataForm.clearValidate(); });
+                },
+                openEditDialog(row) {
+                    this.form = Object.assign({}, row);
+                    this.dialogTitle = 'Edit Room';
+                    this.dialogVisible = true;
+                    this.$nextTick(() => { this.$refs.dataForm.clearValidate(); });
+                },
+                submitForm() {
+                    this.$refs.dataForm.validate((valid) => {
+                        if (valid) {
+                            const method = this.form.id ? 'PUT' : 'POST';
+                            const url = '/room'; // ID is in body for PUT
+                            fetch(url, {
+                                method: method,
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(this.form)
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.code === 1) {
+                                    this.$message.success(this.form.id ? 'Room updated' : 'Room added');
+                                    this.dialogVisible = false;
+                                    this.fetchRooms();
+                                } else {
+                                    this.$message.error(data.msg || 'Operation failed');
+                                }
+                            })
+                            .catch(error => this.$message.error('Operation failed: ' + error));
+                        }
+                    });
+                },
+                handleDelete(id) {
+                    if (window.confirm('Are you sure you want to delete this room?')) {
+                        fetch(`/room/${id}`, { method: 'DELETE' })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.code === 1) {
+                                    this.$message.success('Room deleted');
+                                    this.fetchRooms();
+                                } else {
+                                    this.$message.error(data.msg || 'Error deleting room');
+                                }
+                            })
+                            .catch(error => this.$message.error('Error deleting room: ' + error));
+                    }
+                }
+            },
+            created() {
+                this.fetchRooms();
+                this.fetchBuildingsForDropdown();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Room Assignment Management</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>
+        #app { padding: 20px; }
+        .el-table { margin-top: 20px; }
+        .el-form-item { margin-bottom: 15px; }
+        .el-select, .el-date-editor { width: 100%; }
+        .filter-section { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <el-button type="primary" @click="openAssignDialog">Assign Student to Room</el-button>
+
+        <div class="filter-section">
+            <el-select v-model="filterIsActive" placeholder="Filter by Status" @change="fetchAssignments">
+                <el-option label="Active" :value="true"></el-option>
+                <el-option label="Inactive" :value="false"></el-option>
+                <el-option label="All" value=""></el-option>
+            </el-select>
+        </div>
+
+        <el-table :data="assignmentTableData" style="width: 100%">
+            <el-table-column prop="studentName" label="Student Name"></el-table-column>
+            <el-table-column prop="studentIdNumber" label="Student ID No."></el-table-column>
+            <el-table-column prop="roomNumber" label="Room No."></el-table-column>
+            <el-table-column prop="buildingName" label="Building"></el-table-column>
+            <el-table-column prop="assignmentDate" label="Assignment Date"></el-table-column>
+            <el-table-column prop="plannedLeaveDate" label="Planned Leave"></el-table-column>
+            <el-table-column prop="actualLeaveDate" label="Actual Leave"></el-table-column>
+            <el-table-column label="Status">
+                <template slot-scope="scope">
+                    <el-tag :type="scope.row.isActive ? 'success' : 'info'">
+                        {{ scope.row.isActive ? 'Active' : 'Inactive' }}
+                    </el-tag>
+                </template>
+            </el-table-column>
+            <el-table-column prop="notes" label="Notes"></el-table-column>
+            <el-table-column label="Actions">
+                <template slot-scope="scope">
+                    <el-button size="mini" type="warning" v-if="scope.row.isActive" @click="openUnassignDialog(scope.row.id)">Unassign</el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+
+        <!-- Assign Dialog -->
+        <el-dialog title="Assign Student to Room" :visible.sync="assignDialogVisible" width="40%">
+            <el-form :model="assignForm" :rules="assignRules" ref="assignDataForm" label-width="150px">
+                <el-form-item label="Student" prop="studentId">
+                    <el-select v-model="assignForm.studentId" filterable placeholder="Select Student">
+                        <el-option v-for="s in studentListForDropdown" :key="s.id" :label="s.name + ' (' + s.studentIdNumber + ')'" :value="s.id"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="Room" prop="roomId">
+                    <el-select v-model="assignForm.roomId" filterable placeholder="Select Room">
+                        <el-option v-for="r in roomListForDropdown" :key="r.id" :label="r.roomNumber + ' (' + r.buildingName + ') - Avail: ' + (r.capacity - (r.currentOccupancy || 0))" :value="r.id"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="Assignment Date" prop="assignmentDate">
+                    <el-date-picker type="date" placeholder="Pick a date" v-model="assignForm.assignmentDate" value-format="yyyy-MM-dd"></el-date-picker>
+                </el-form-item>
+                <el-form-item label="Planned Leave Date" prop="plannedLeaveDate">
+                    <el-date-picker type="date" placeholder="Pick a date (optional)" v-model="assignForm.plannedLeaveDate" value-format="yyyy-MM-dd"></el-date-picker>
+                </el-form-item>
+                <el-form-item label="Notes" prop="notes">
+                    <el-input type="textarea" v-model="assignForm.notes"></el-input>
+                </el-form-item>
+            </el-form>
+            <span slot="footer">
+                <el-button @click="assignDialogVisible = false">Cancel</el-button>
+                <el-button type="primary" @click="submitAssignForm">Confirm</el-button>
+            </span>
+        </el-dialog>
+
+        <!-- Unassign Dialog -->
+        <el-dialog title="Unassign Student" :visible.sync="unassignDialogVisible" width="30%">
+            <el-form :model="unassignForm" :rules="unassignRules" ref="unassignDataForm" label-width="150px">
+                <el-form-item label="Actual Leave Date" prop="actualLeaveDate">
+                    <el-date-picker type="date" placeholder="Pick a date" v-model="unassignForm.actualLeaveDate" value-format="yyyy-MM-dd"></el-date-picker>
+                </el-form-item>
+                <el-form-item label="Unassignment Notes" prop="notes">
+                    <el-input type="textarea" v-model="unassignForm.notes"></el-input>
+                </el-form-item>
+            </el-form>
+            <span slot="footer">
+                <el-button @click="unassignDialogVisible = false">Cancel</el-button>
+                <el-button type="primary" @click="submitUnassignForm">Confirm Unassignment</el-button>
+            </span>
+        </el-dialog>
+         <br/>
+        <a href="/backend/page/dormitory/index.html" style="padding:10px 15px; background-color:#6c757d; color:white; text-decoration:none; border-radius:4px; margin-top: 20px; display:inline-block;">Back to Dormitory Menu</a>
+    </div>
+
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    assignmentTableData: [],
+                    filterIsActive: true, // Default to show active assignments
+                    assignDialogVisible: false,
+                    assignForm: {
+                        studentId: null,
+                        roomId: null,
+                        assignmentDate: new Date().toISOString().slice(0,10),
+                        plannedLeaveDate: null,
+                        notes: ''
+                    },
+                    assignRules: {
+                        studentId: [{ required: true, message: 'Please select a student', trigger: 'change' }],
+                        roomId: [{ required: true, message: 'Please select a room', trigger: 'change' }],
+                        assignmentDate: [{ required: true, message: 'Assignment date is required', trigger: 'change' }]
+                    },
+                    unassignDialogVisible: false,
+                    unassignForm: {
+                        assignmentId: null,
+                        actualLeaveDate: new Date().toISOString().slice(0,10),
+                        notes: ''
+                    },
+                    unassignRules: {
+                        actualLeaveDate: [{ required: true, message: 'Actual leave date is required', trigger: 'change' }]
+                    },
+                    studentListForDropdown: [],
+                    roomListForDropdown: []
+                }
+            },
+            methods: {
+                fetchAssignments() {
+                    let url = `/assignment/page?page=1&pageSize=100`;
+                    if (this.filterIsActive !== '') { // Check if not empty string for "All"
+                        url += `&isActive=${this.filterIsActive}`;
+                    }
+                    fetch(url)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.code === 1 && data.data && data.data.records) {
+                                this.assignmentTableData = data.data.records;
+                            } else {
+                                this.$message.error(data.msg || 'Error fetching assignments');
+                            }
+                        }).catch(error => this.$message.error('Error fetching assignments: ' + error));
+                },
+                async fetchStudentsForDropdown() {
+                    try {
+                        const response = await fetch('/student/page?page=1&pageSize=1000');
+                        const data = await response.json();
+                        if (data.code === 1 && data.data.records) {
+                            const students = data.data.records;
+                            const activeAssignmentsPromises = students.map(s => 
+                                fetch(`/assignment/student/${s.id}/active`).then(res => res.json())
+                            );
+                            const activeAssignmentsResults = await Promise.all(activeAssignmentsPromises);
+                            
+                            this.studentListForDropdown = students.filter((s, index) => {
+                                const assignmentResult = activeAssignmentsResults[index];
+                                return assignmentResult.code === 1 && assignmentResult.data === null;
+                            });
+                        } else { this.$message.error(data.msg || 'Error fetching students'); }
+                    } catch (error) { this.$message.error('Error fetching students for dropdown: ' + error); }
+                },
+                async fetchRoomsForDropdown() {
+                    try {
+                        const response = await fetch('/room/page?page=1&pageSize=1000');
+                        const data = await response.json();
+                        if (data.code === 1 && data.data.records) {
+                            this.roomListForDropdown = data.data.records.filter(r => (r.currentOccupancy || 0) < r.capacity);
+                        } else { this.$message.error(data.msg || 'Error fetching rooms'); }
+                    } catch (error) { this.$message.error('Error fetching rooms for dropdown: ' + error); }
+                },
+                openAssignDialog() {
+                    this.assignForm = { studentId: null, roomId: null, assignmentDate: new Date().toISOString().slice(0,10), plannedLeaveDate: null, notes: ''};
+                    this.assignDialogVisible = true;
+                    this.fetchStudentsForDropdown(); // Refresh lists each time dialog opens
+                    this.fetchRoomsForDropdown();
+                    this.$nextTick(() => { this.$refs.assignDataForm.clearValidate(); });
+                },
+                submitAssignForm() {
+                    this.$refs.assignDataForm.validate((valid) => {
+                        if (valid) {
+                            fetch('/assignment', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(this.assignForm)
+                            }).then(res => res.json()).then(result => {
+                                if (result.code === 1) {
+                                    this.$message.success('Student assigned successfully');
+                                    this.assignDialogVisible = false;
+                                    this.fetchAssignments();
+                                    // Potentially refresh dropdowns if needed, or rely on next open
+                                } else { this.$message.error(result.msg || 'Could not assign student'); }
+                            }).catch(error => this.$message.error('Assign operation failed: ' + error));
+                        }
+                    });
+                },
+                openUnassignDialog(assignmentId) {
+                    this.unassignForm.assignmentId = assignmentId;
+                    this.unassignForm.actualLeaveDate = new Date().toISOString().slice(0,10);
+                    this.unassignForm.notes = '';
+                    this.unassignDialogVisible = true;
+                    this.$nextTick(() => { this.$refs.unassignDataForm.clearValidate(); });
+                },
+                submitUnassignForm() {
+                    this.$refs.unassignDataForm.validate((valid) => {
+                        if (valid) {
+                            const { assignmentId, actualLeaveDate, notes } = this.unassignForm;
+                            const url = `/assignment/unassign/${assignmentId}?actualLeaveDate=${actualLeaveDate}&notes=${encodeURIComponent(notes)}`;
+                            fetch(url, { method: 'PUT' })
+                                .then(res => res.json())
+                                .then(result => {
+                                    if (result.code === 1) {
+                                        this.$message.success('Student unassigned successfully');
+                                        this.unassignDialogVisible = false;
+                                        this.fetchAssignments();
+                                        // Potentially refresh dropdowns for assign dialog
+                                        this.fetchStudentsForDropdown(); 
+                                        this.fetchRoomsForDropdown();
+                                    } else { this.$message.error(result.msg || 'Could not unassign student'); }
+                                }).catch(error => this.$message.error('Unassign operation failed: ' + error));
+                        }
+                    });
+                }
+            },
+            created() {
+                this.fetchAssignments();
+                // Initial fetch for dropdowns not strictly needed here if fetched on dialog open
+                // this.fetchStudentsForDropdown(); 
+                // this.fetchRoomsForDropdown();
+            }
+        });
+    </script>
+</body>
+</html>

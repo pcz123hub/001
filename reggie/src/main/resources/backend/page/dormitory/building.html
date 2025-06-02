@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Building Management</title>
+    <!-- Import Vue and Element UI styles -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>
+        #app { padding: 20px; }
+        .el-table { margin-top: 20px; }
+        .el-button--mini { margin-left: 5px; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <el-button type="primary" @click="openAddDialog">Add Building</el-button>
+
+        <el-table :data="tableData" style="width: 100%">
+            <el-table-column prop="name" label="Name"></el-table-column>
+            <el-table-column prop="numberOfFloors" label="Number of Floors"></el-table-column>
+            <el-table-column prop="createTime" label="Create Time"></el-table-column>
+            <el-table-column prop="updateTime" label="Update Time"></el-table-column>
+            <el-table-column label="Actions">
+                <template slot-scope="scope">
+                    <el-button size="mini" @click="openEditDialog(scope.row)">Edit</el-button>
+                    <el-button size="mini" type="danger" @click="handleDelete(scope.row.id)">Delete</el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+
+        <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="30%">
+            <el-form :model="form" :rules="rules" ref="dataForm" label-width="120px">
+                <el-form-item label="Name" prop="name">
+                    <el-input v-model="form.name"></el-input>
+                </el-form-item>
+                <el-form-item label="Floors" prop="numberOfFloors">
+                    <el-input-number v-model="form.numberOfFloors" :min="1"></el-input-number>
+                </el-form-item>
+            </el-form>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="dialogVisible = false">Cancel</el-button>
+                <el-button type="primary" @click="submitForm">Confirm</el-button>
+            </span>
+        </el-dialog>
+    </div>
+
+    <!-- Import Vue and Element UI JavaScript -->
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    tableData: [],
+                    dialogVisible: false,
+                    dialogTitle: '',
+                    form: {
+                        id: null,
+                        name: '',
+                        numberOfFloors: 1
+                    },
+                    rules: {
+                        name: [
+                            { required: true, message: 'Please input building name', trigger: 'blur' }
+                        ],
+                        numberOfFloors: [
+                            { required: true, message: 'Please input number of floors', trigger: 'blur' },
+                            { type: 'number', message: 'Number of floors must be a number', trigger: 'blur'}
+                        ]
+                    }
+                }
+            },
+            methods: {
+                fetchBuildings() {
+                    fetch('/building/list')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.code === 1) {
+                                this.tableData = data.data;
+                            } else {
+                                this.$message.error(data.msg || 'Error fetching buildings');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching buildings:', error);
+                            this.$message.error('Error fetching buildings');
+                        });
+                },
+                openAddDialog() {
+                    this.form = { id: null, name: '', numberOfFloors: 1 };
+                    this.dialogTitle = 'Add Building';
+                    this.dialogVisible = true;
+                    this.$nextTick(() => {
+                        this.$refs.dataForm.clearValidate();
+                    });
+                },
+                openEditDialog(row) {
+                    this.form = Object.assign({}, row); // Clone row data
+                    this.dialogTitle = 'Edit Building';
+                    this.dialogVisible = true;
+                    this.$nextTick(() => {
+                        this.$refs.dataForm.clearValidate();
+                    });
+                },
+                submitForm() {
+                    this.$refs.dataForm.validate((valid) => {
+                        if (valid) {
+                            const method = this.form.id ? 'PUT' : 'POST';
+                            const url = '/building' + (this.form.id ? '' : '');
+                            fetch(url, {
+                                method: method,
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(this.form)
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.code === 1) {
+                                    this.$message.success(this.form.id ? 'Building updated successfully' : 'Building added successfully');
+                                    this.dialogVisible = false;
+                                    this.fetchBuildings();
+                                } else {
+                                    this.$message.error(data.msg || 'Operation failed');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error saving building:', error);
+                                this.$message.error('Operation failed');
+                            });
+                        } else {
+                            console.log('Form validation failed');
+                            return false;
+                        }
+                    });
+                },
+                handleDelete(id) {
+                    if (window.confirm('Are you sure you want to delete this building?')) {
+                        fetch(`/building/${id}`, { method: 'DELETE' })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.code === 1) {
+                                    this.$message.success('Building deleted successfully');
+                                    this.fetchBuildings();
+                                } else {
+                                    this.$message.error(data.msg || 'Error deleting building');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error deleting building:', error);
+                                this.$message.error('Error deleting building');
+                            });
+                    }
+                }
+            },
+            created() {
+                this.fetchBuildings();
+            }
+        });
+    </script>
+</body>
+</html>
