@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{main}"> <!-- Assuming a main layout template -->
+<head>
+    <title th:text="${dormitory.id == null ? 'Add Dormitory' : 'Edit Dormitory'}">Dormitory Form</title>
+</head>
+<body>
+<div layout:fragment="content" id="dormitoryFormContent">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 th:text="${dormitory.id == null ? 'Add New Dormitory' : 'Edit Dormitory'}">Dormitory Form</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                        <li class="breadcrumb-item"><a th:href="@{/dormitories/}">Dormitories</a></li>
+                        <li class="breadcrumb-item active" th:text="${dormitory.id == null ? 'Add' : 'Edit'}">Form</li>
+                    </ol>
+                </div>
+            </div>
+        </div><!-- /.container-fluid -->
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title" th:text="${dormitory.id == null ? 'Enter Dormitory Details' : 'Update Dormitory Details'}">Form</h3>
+                        </div>
+                        <!-- /.card-header -->
+                        <!-- form start -->
+                        <form th:action="@{/dormitories/save}" th:object="${dormitory}" method="post">
+                            <input type="hidden" th:field="*{id}" />
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="name">Dormitory Name</label>
+                                    <input type="text" class="form-control" id="name" placeholder="Enter dormitory name"
+                                           th:field="*{name}" required>
+                                    <!-- Example of displaying validation errors if available -->
+                                    <!-- <span class="text-danger" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span> -->
+                                </div>
+                                <div class="form-group">
+                                    <label for="address">Address</label>
+                                    <input type="text" class="form-control" id="address" placeholder="Enter address"
+                                           th:field="*{address}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="totalRooms">Total Rooms</label>
+                                    <input type="number" class="form-control" id="totalRooms" placeholder="Enter total number of rooms"
+                                           th:field="*{totalRooms}">
+                                </div>
+                            </div>
+                            <!-- /.card-body -->
+
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">
+                                     <i class="fas fa-save"></i> Save
+                                </button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <!-- /.card -->
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+</body>
+</html>

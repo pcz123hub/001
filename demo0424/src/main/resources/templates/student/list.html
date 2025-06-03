@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{main}"> <!-- Assuming a main layout template -->
+<head>
+    <title>Student List</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Students</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                        <li class="breadcrumb-item active">Student List</li>
+                    </ol>
+                </div>
+            </div>
+        </div><!-- /.container-fluid -->
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">All Students</h3>
+                            <div class="card-tools">
+                                <a id="addStudentButton" th:href="@{/students/add}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Add Student
+                                </a>
+                            </div>
+                        </div>
+                        <!-- /.card-header -->
+                        <div class="card-body">
+                            <table id="studentsTable" class="table table-bordered table-hover">
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Student ID</th>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
+                                    <th>Gender</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Room</th>
+                                    <th>Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="student : ${students}">
+                                    <td th:text="${student.id}">1</td>
+                                    <td th:text="${student.studentId}">S1001</td>
+                                    <td th:text="${student.firstName}">John</td>
+                                    <td th:text="${student.lastName}">Doe</td>
+                                    <td th:text="${student.gender}">MALE</td>
+                                    <td th:text="${student.email}">john.doe@example.com</td>
+                                    <td th:text="${student.phoneNumber}">123-456-7890</td>
+                                    <td th:text="${student.room?.roomNumber ?: (student.roomId != null ? student.roomId : 'Unassigned')}">A101 / Unassigned</td>
+                                    <td>
+                                        <a th:href="@{/students/edit/{id}(id=${student.id})}" class="btn btn-sm btn-info editStudentButton">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <a th:href="@{/students/delete/{id}(id=${student.id})}"
+                                           class="btn btn-sm btn-danger"
+                                           onclick="return confirm('Are you sure you want to delete this student?');">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(students)}">
+                                    <td colspan="9" class="text-center">No students found.</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                    <!-- /.card -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal Placeholder -->
+    <div class="modal fade" id="studentModal" tabindex="-1" role="dialog" aria-labelledby="studentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document"> <!-- Using modal-lg for potentially wider student form -->
+            <div class="modal-content">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<th:block layout:fragment="scripts">
+    <script th:inline="javascript">
+        $(document).ready(function () {
+            // --- Add Student Modal ---
+            $('#addStudentButton').on('click', function (e) {
+                e.preventDefault();
+                var url = $(this).attr('href');
+                loadStudentModalContent(url);
+            });
+
+            // --- Edit Student Modal ---
+            $('#studentsTable').on('click', '.editStudentButton', function(e) {
+                e.preventDefault();
+                var url = $(this).attr('href');
+                loadStudentModalContent(url);
+            });
+
+            function loadStudentModalContent(url) {
+                var $modal = $('#studentModal');
+                var $modalContent = $modal.find('.modal-content');
+
+                $modalContent.html(''); // Clear previous content
+                $modalContent.html('<div class="modal-body text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div><p>Loading form...</p></div>');
+                $modal.modal('show');
+
+                $modalContent.load(url + ' #studentFormContent', function(response, status, xhr) {
+                    if (status == "error") {
+                        var errorTitle = 'Error Loading Student Form';
+                        var errorBody = '<p>Sorry, an error occurred while loading the form. Please try again later.</p>';
+                        if (xhr.status !== 0) {
+                           errorBody += '<p>Error: ' + xhr.status + ' ' + xhr.statusText + '</p>';
+                        }
+                        showStudentModalError($modal, errorTitle, errorBody);
+                    } else {
+                        setupStudentModalFormSubmitHandler($modal);
+                        // Initialize plugins after content is loaded
+                        if ($.fn.select2) {
+                           $modal.find('select').select2({ theme: 'bootstrap4', dropdownParent: $modal });
+                        }
+                        // Add other plugin initializations here if needed (e.g., datepicker)
+                    }
+                });
+            }
+
+            function setupStudentModalFormSubmitHandler($modal) {
+                var $form = $modal.find('form');
+                if (!$form.length) return;
+
+                $form.off('submit').on('submit', function(e) {
+                    e.preventDefault();
+                    var form = $(this);
+                    var url = form.attr('action');
+                    var $submitButton = form.find('button[type="submit"]');
+                    var originalButtonText = $submitButton.html();
+                    $submitButton.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...').prop('disabled', true);
+
+                    $.ajax({
+                        type: "POST",
+                        url: url,
+                        data: form.serialize(),
+                        success: function(response, status, xhr) {
+                            $modal.modal('hide');
+                            location.reload();
+                        },
+                        success: function(response, status, xhr) {
+                            $submitButton.html(originalButtonText).prop('disabled', false);
+                            // Try to parse if it's a string (though Spring usually sends JSON with correct Content-Type)
+                            var jsonResponse = (typeof response === 'string') ? JSON.parse(response) : response;
+
+                            if (jsonResponse && jsonResponse.status) {
+                                if (jsonResponse.status === 'success') {
+                                    $modal.modal('hide');
+                                    location.reload();
+                                } else { // status === 'error' from our controller
+                                    showStudentModalAlertMessage(jsonResponse.message, 'danger');
+                                }
+                            } else {
+                                // This case might occur if server returns HTML (e.g. Spring validation on server-side redirecting back to form)
+                                // For this project, we expect JSON or an error that the 'error' callback handles.
+                                // If it's HTML, it means the controller didn't send JSON.
+                                // We might replace content if it's the form, or show a generic error.
+                                 $modal.find('.modal-content').html(response); // Assuming 'response' is HTML
+                                 setupStudentModalFormSubmitHandler($modal); // Re-attach handler
+                                 if ($.fn.select2) { $modal.find('select').select2({ theme: 'bootstrap4', dropdownParent: $modal });}
+                                 showStudentModalAlertMessage('Form updated. Please check for errors.', 'warning');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            $submitButton.html(originalButtonText).prop('disabled', false);
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                showStudentModalAlertMessage(xhr.responseJSON.message, 'danger');
+                            } else if (xhr.responseText) {
+                                // Fallback for non-JSON error responses, or if controller sends plain text on error
+                                var errorMsg = xhr.responseText.length > 300 ? "An unexpected server error occurred." : xhr.responseText;
+                                showStudentModalAlertMessage(errorMsg, 'danger');
+                            } else {
+                                showStudentModalAlertMessage('An unexpected error occurred: ' + error, 'danger');
+                            }
+                        }
+                    });
+                });
+            }
+
+            // Shows an alert message inside the modal (at the #modalAlertPlaceholder)
+            function showStudentModalAlertMessage(message, type) { // type can be 'success', 'danger', 'warning', 'info'
+                var $alertPlaceholder = $('#studentModal').find('#modalAlertPlaceholder');
+                if ($alertPlaceholder.length === 0) {
+                    // If placeholder not found in current modal content, prepend to modal-body
+                    // This might happen if an error occurs before the form content is fully loaded
+                    // or if the loaded content somehow overwrites it.
+                    // A more robust solution would be to ensure the placeholder is part of the modal's static structure
+                    // outside the dynamically loaded content area if this becomes an issue.
+                    // For now, let's assume it's within the loaded #studentFormContent.
+                    console.error("#modalAlertPlaceholder not found in #studentModal");
+                    // Fallback: use a generic alert
+                    alert("Message: " + message); // Not ideal, but a fallback
+                    return;
+                }
+                $alertPlaceholder.removeClass('alert-success alert-danger alert-warning alert-info').addClass('alert-' + type);
+                $alertPlaceholder.html(message); // Use .html() if message contains HTML, otherwise .text()
+                $alertPlaceholder.fadeIn();
+                // Optional: auto-hide after some time
+                // setTimeout(function() { $alertPlaceholder.fadeOut(); }, 5000);
+            }
+
+            // This function is no longer used as errors are displayed in #modalAlertPlaceholder
+            // function showStudentModalError($modal, title, body) { ... }
+        });
+    </script>
+</th:block>
+
+</body>
+</html>

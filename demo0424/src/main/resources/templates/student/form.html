@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{main}"> <!-- Assuming a main layout template -->
+<head>
+    <title th:text="${student.id == null ? 'Add Student' : 'Edit Student'}">Student Form</title>
+</head>
+<body>
+<div layout:fragment="content" id="studentFormContent">
+    <div id="modalAlertPlaceholder" class="alert" style="display:none; margin: 10px;"></div>
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 th:text="${student.id == null ? 'Add New Student' : 'Edit Student'}">Student Form</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                        <li class="breadcrumb-item"><a th:href="@{/students/}">Students</a></li>
+                        <li class="breadcrumb-item active" th:text="${student.id == null ? 'Add' : 'Edit'}">Form</li>
+                    </ol>
+                </div>
+            </div>
+        </div><!-- /.container-fluid -->
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title" th:text="${student.id == null ? 'Enter Student Details' : 'Update Student Details'}">Form</h3>
+                        </div>
+                        <!-- /.card-header -->
+                        <!-- form start -->
+                        <form th:action="@{/students/save}" th:object="${student}" method="post">
+                            <input type="hidden" th:field="*{id}" />
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="studentId">Student ID</label>
+                                    <input type="text" class="form-control" id="studentId" placeholder="Enter student ID (e.g., S1001)"
+                                           th:field="*{studentId}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="firstName">First Name</label>
+                                    <input type="text" class="form-control" id="firstName" placeholder="Enter first name"
+                                           th:field="*{firstName}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lastName">Last Name</label>
+                                    <input type="text" class="form-control" id="lastName" placeholder="Enter last name"
+                                           th:field="*{lastName}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="gender">Gender</label>
+                                    <select class="form-control" id="gender" th:field="*{gender}" required>
+                                        <option value="">Select Gender</option>
+                                        <option value="MALE">Male</option>
+                                        <option value="FEMALE">Female</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email</label>
+                                    <input type="email" class="form-control" id="email" placeholder="Enter email address"
+                                           th:field="*{email}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="phoneNumber">Phone Number</label>
+                                    <input type="tel" class="form-control" id="phoneNumber" placeholder="Enter phone number"
+                                           th:field="*{phoneNumber}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="dateOfBirth">Date of Birth</label>
+                                    <input type="date" class="form-control" id="dateOfBirth"
+                                           th:field="*{dateOfBirth}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="roomId">Assign Room</label>
+                                    <select class="form-control" id="roomId" th:field="*{roomId}">
+                                        <option th:value="''">-- Select Room (Optional) --</option>
+                                        <option th:each="room : ${rooms}"
+                                                th:value="${room.id}"
+                                                th:text="${room.roomNumber + ' (Capacity: ' + room.capacity + ', Occupancy: ' + room.currentOccupancy + ')'}">
+                                            Room Details
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <!-- /.card-body -->
+
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">
+                                     <i class="fas fa-save"></i> Save
+                                </button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <!-- /.card -->
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+</body>
+</html>
