@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} ?: '宿舍管理系统'">宿舍管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#0FC6C2',
+                        accent: '#722ED1',
+                        danger: '#F53F3F',
+                        warning: '#FF7D00',
+                        success: '#00B42A',
+                        info: '#86909C',
+                        light: '#F2F3F5',
+                        dark: '#1D2129',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .sidebar-item {
+                @apply flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-primary/5 hover:text-primary rounded-lg transition-all duration-200;
+            }
+            .sidebar-item.active {
+                @apply bg-primary/10 text-primary font-medium;
+            }
+            .btn {
+                @apply px-4 py-2 rounded-lg transition-all duration-200 font-medium;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90 active:bg-primary/80 shadow-md hover:shadow-lg;
+            }
+            .btn-secondary {
+                @apply bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100;
+            }
+            .btn-danger {
+                @apply bg-danger text-white hover:bg-danger/90 active:bg-danger/80;
+            }
+            .card {
+                @apply bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden;
+            }
+            .form-input {
+                @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50" th:fragment="nav">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/index" class="flex-shrink-0 flex items-center">
+                        <i class="fa fa-building text-primary text-2xl mr-2"></i>
+                        <span class="font-semibold text-xl text-gray-800">宿舍管理系统</span>
+                    </a>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="/index" class="border-b-2 border-primary px-1 pt-1 text-sm font-medium text-primary">
+                            <i class="fa fa-home mr-1"></i> 首页
+                        </a>
+                        <a href="/dormitory/list" class="border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                            <i class="fa fa-bed mr-1"></i> 宿舍管理
+                        </a>
+                        <a href="/student/list" class="border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                            <i class="fa fa-users mr-1"></i> 学生管理
+                        </a>
+                        <a href="/login" class="border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                            <i class="fa fa-sign-in mr-1"></i> 登录
+                        </a>
+                        <a href="/register" class="border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                            <i class="fa fa-user-plus mr-1"></i> 注册
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 relative">
+                        <button type="button" class="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" id="user-menu-button">
+                            <img class="h-8 w-8 rounded-full" src="https://picsum.photos/200/200?random=1" alt="用户头像">
+                        </button>
+                        <div class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 py-1 z-10" id="user-menu">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fa fa-user mr-1"></i> 个人信息
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fa fa-cog mr-1"></i> 设置
+                            </a>
+                            <a href="/logout" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fa fa-sign-out mr-1"></i> 退出登录
+                            </a>
+                        </div>
+                    </div>
+                    <div class="ml-4 flex items-center sm:ml-6">
+                        <span class="text-sm font-medium text-gray-700 mr-2" sec:authentication="name">用户名</span>
+                        <span class="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full" sec:authorize="hasRole('ADMIN')">管理员</span>
+                        <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full" sec:authorize="hasRole('USER')">普通用户</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main class="flex-grow">
+        <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <!-- 页面标题 -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900" th:text="${pageTitle} ?: '页面标题'">页面标题</h1>
+                <p class="mt-1 text-sm text-gray-600" th:text="${pageDescription} ?: ''">页面描述信息</p>
+            </div>
+            
+            <!-- 页面内容 -->
+            <div layout:fragment="content">
+                <!-- 默认内容 -->
+                <div class="bg-white overflow-hidden shadow-sm rounded-lg p-6">
+                    <p class="text-gray-500">页面内容将在这里显示</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-white border-t border-gray-200" th:fragment="footer">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-sm text-gray-500">© 2025 宿舍管理系统. 保留所有权利.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // 用户菜单切换
+        document.getElementById('user-menu-button').addEventListener('click', function() {
+            const menu = document.getElementById('user-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // 点击页面其他区域关闭菜单
+        document.addEventListener('click', function(event) {
+            const menuButton = document.getElementById('user-menu-button');
+            const menu = document.getElementById('user-menu');
+            
+            if (!menuButton.contains(event.target) && !menu.contains(event.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        // 通知消息自动关闭
+        document.addEventListener('DOMContentLoaded', function() {
+            const notifications = document.querySelectorAll('.notification');
+            notifications.forEach(notification => {
+                setTimeout(() => {
+                    notification.classList.add('opacity-0');
+                    setTimeout(() => {
+                        notification.classList.add('hidden');
+                    }, 300);
+                }, 5000);
+            });
+        });
+    </script>
+</body>
+</html>
