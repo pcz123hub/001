@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::#content})}">
+<head>
+    <title>Add Student - Dormitory Management</title>
+</head>
+<body>
+    <div id="content">
+        <h2>Add New Student</h2>
+        <form th:action="@{/student/add}" th:object="${student}" method="post">
+            <div>
+                <label for="name">Name:</label>
+                <input type="text" id="name" th:field="*{name}" required />
+            </div>
+            <div>
+                <label for="studentNumber">Student Number:</label>
+                <input type="text" id="studentNumber" th:field="*{studentNumber}" required />
+            </div>
+            <div>
+                <label for="gender">Gender:</label>
+                <input type="text" id="gender" th:field="*{gender}" /> <!-- Consider a select dropdown for gender -->
+            </div>
+            <div>
+                <label for="dormitoryId">Dormitory:</label>
+                <select id="dormitoryId" th:field="*{dormitoryId}">
+                    <option value="">None</option>
+                    <option th:each="dorm : ${availableDormitories}" th:value="${dorm.id}" th:text="${dorm.name} + ' (Capacity: ' + ${dorm.capacity} + ', Occupied: ' + ${dorm.currentOccupancy} + ')'"></option>
+                </select>
+            </div>
+            <div>
+                <button type="submit">Save Student</button>
+                <a th:href="@{/student/list}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

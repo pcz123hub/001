@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <nav th:fragment="sidebar">
+        <ul>
+            <li><a th:href="@{/index}">Dashboard</a></li>
+            <li><a th:href="@{/dormitory/list}">Manage Dormitories</a></li>
+            <li><a th:href="@{/student/list}">Manage Students</a></li>
+            <!-- Add more links as needed, possibly dynamically based on context -->
+        </ul>
+    </nav>
+</body>
+</html>

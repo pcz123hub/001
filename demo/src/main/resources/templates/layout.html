@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dormitory Management</title>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header th:insert="~{fragments/header :: header}"></header>
+
+    <nav th:insert="~{fragments/sidebar :: sidebar}"></nav>
+
+    <main>
+        <div th:replace="${content}">
+            <!-- Content will be inserted here -->
+        </div>
+    </main>
+</body>
+</html>

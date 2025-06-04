@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::#content})}">
+<head>
+    <title>Login - Dormitory Management</title>
+</head>
+<body>
+    <div id="content">
+        <h2>Login</h2>
+        <form th:action="@{/login}" method="post"> <!-- Assuming POST mapping for login, adjust if GET is used by Spring Security or similar -->
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required autofocus />
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required />
+            </div>
+            <div>
+                <button type="submit">Login</button>
+            </div>
+            <p th:if="${param.error}" class="error">Invalid username or password.</p>
+            <p th:if="${param.logout}" class="success">You have been logged out.</p>
+        </form>
+        <p>Don't have an account? <a th:href="@{/register}">Register here</a>.</p>
+    </div>
+</body>
+</html>

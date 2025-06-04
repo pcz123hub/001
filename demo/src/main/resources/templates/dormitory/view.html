@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::#content})}">
+<head>
+    <title th:text="${dormitory.name} + ' - Dormitory Details'"></title>
+</head>
+<body>
+    <div id="content">
+        <h2 th:text="'Dormitory: ' + ${dormitory.name}"></h2>
+        <p><strong>ID:</strong> <span th:text="${dormitory.id}"></span></p>
+        <p><strong>Name:</strong> <span th:text="${dormitory.name}"></span></p>
+        <p><strong>Capacity:</strong> <span th:text="${dormitory.capacity}"></span></p>
+        <p><strong>Current Occupancy:</strong> <span th:text="${dormitory.currentOccupancy}"></span></p>
+
+        <h3>Students in this Dormitory:</h3>
+        <table th:if="${not #lists.isEmpty(students)}" border="1">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Student Number</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="student : ${students}">
+                    <td th:text="${student.id}"></td>
+                    <td th:text="${student.name}"></td>
+                    <td th:text="${student.studentNumber}"></td>
+                </tr>
+            </tbody>
+        </table>
+        <p th:if="${#lists.isEmpty(students)}">No students currently in this dormitory.</p>
+
+        <p><a th:href="@{/dormitory/list}">Back to Dormitory List</a></p>
+    </div>
+</body>
+</html>

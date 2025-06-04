@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <header th:fragment="header">
+        <h1>Dormitory Management System</h1>
+        <a th:href="@{/index}">Home</a>
+        <a th:href="@{/dormitory/list}">Dormitories</a>
+        <a th:href="@{/student/list}">Students</a>
+        <a th:href="@{/login}" style="float: right;">Login</a>
+        <a th:href="@{/register}" style="float: right;">Register</a>
+    </header>
+</body>
+</html>
